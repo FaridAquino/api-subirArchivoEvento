@@ -1,0 +1,58 @@
+org: faridaquino
+service: semana14-taller2
+
+provider:
+  name: aws
+  runtime: python3.13
+  memorySize: 128
+  timeout: 30
+  iam:
+    role: arn:aws:iam::738683684819:role/LabRole
+  
+  environment:
+    BUCKET_NAME: faquino-universidad
+    TABLE_NAME: ${sls:stage}-t_archivos_UTEC
+
+functions:
+  subirArchivo:
+    handler: handler.subirArchivoBucket
+    events:
+      - http:
+          path: /archivo/subir
+          method: post
+          cors: true
+          integration: lambda-proxy
+
+  leerMetada:
+    handler: handler.leerMetada
+    events:
+      - s3:
+          bucket: ${self:provider.environment.BUCKET_NAME}
+          event: s3:ObjectCreated:*
+          existing: true
+          forceDeploy: true
+
+  ponerArchivoDynamo:
+    handler: handler.ponerArchivoDynamo
+    events:
+      - sns:
+          arn: arn:aws:sns:us-east-1:738683684819:TemaNuevoArchivo
+          topicName: TemaNuevoArchivo
+
+resources:
+  Resources:
+    TablaArchivos:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: tenant_id
+            AttributeType: S
+          - AttributeName: archivo_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: tenant_id
+            KeyType: HASH
+          - AttributeName: archivo_id
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
