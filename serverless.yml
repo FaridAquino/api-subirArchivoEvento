@@ -12,6 +12,7 @@ provider:
   environment:
     BUCKET_NAME: faquino-universidad
     TABLE_NAME: ${sls:stage}-t_archivos_UTEC
+    # TOPIC_ARN ya está hardcoded en el código, no es estrictamente necesario aquí
 
 functions:
   subirArchivo:
@@ -25,12 +26,8 @@ functions:
 
   leerMetada:
     handler: handler.leerMetada
-    events:
-      - s3:
-          bucket: ${self:provider.environment.BUCKET_NAME}
-          event: s3:ObjectCreated:*
-          existing: true
-          forceDeploy: true
+    # HEMOS QUITADO LA SECCIÓN EVENTS DE AQUÍ PARA EVITAR EL ERROR
+    # Lo configuraremos manualmente en la consola.
 
   ponerArchivoDynamo:
     handler: handler.ponerArchivoDynamo
